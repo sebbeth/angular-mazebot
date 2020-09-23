@@ -2,15 +2,15 @@
     <div *ngIf="maze">
         <table>
             <tr *ngFor="let row of maze.map; index as i">
-                <td *ngFor="let cell of row; index as j" title="{{ i }},{{ j }}">
-                    {{ isCurrentLocation(j, i) ? "🤖" : cell }}
+                <td *ngFor="let cell of row; index as j">
+                    {{ isCurrentLocation(j, i) ? "🤖" : cell === "B" ? "🏁" : cell }}
                 </td>
             </tr>
         </table>
         <a routerLink="" routerLinkActive="active">Quit</a>
         <div>Maze: {{ maze.name }}</div>
         <div>Moves: {{ moves.length }}</div>
-        <div *ngIf="isComplete()">🎉Yuuuuuuuus🎉</div>
+        <div *ngIf="message">{{ message }}</div>
         <button (click)="onMove(0)">↑</button>
         <button (click)="onMove(1)">→</button>
         <button (click)="onMove(2)">↓</button>

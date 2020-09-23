@@ -2,14 +2,7 @@ import { MazeService } from './../maze.service';
 import { Component, HostListener, OnInit } from '@angular/core';
 import Maze from '../models/maze';
 import Point from '../models/Point';
-import { canEnterCell, getCurrentLocation } from '../maze.helpers';
-
-export enum MoveDirections {
-  UP,
-  RIGHT,
-  DOWN,
-  LEFT,
-}
+import { canEnterCell, MoveDirections, serializeMoves } from '../maze.helpers';
 
 @Component({
   selector: 'app-maze',
@@ -18,23 +11,24 @@ export enum MoveDirections {
 })
 export class MazeComponent implements OnInit {
   loading = false;
-  moves: Point[] = [];
+  moves: MoveDirections[] = [];
+  currentLocation: Point;
   maze: Maze = null;
+  isComplete: boolean;
+  message: string = null;
   constructor(private mazeService: MazeService) {}
 
   ngOnInit(): void {
-    console.log('Maze Init!');
     this.getData();
   }
 
   async getData(): Promise<void> {
     this.maze = await this.mazeService.getMaze();
-    this.moves.push(this.maze.startingPosition);
+    this.currentLocation = this.maze.startingPosition;
   }
 
   @HostListener('window:keyup', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent): void {
-    console.log(event.key);
     switch (event.key) {
       case 'ArrowUp':
         this.onMove(MoveDirections.UP);
@@ -54,46 +48,54 @@ export class MazeComponent implements OnInit {
   }
 
   onMove(direction: MoveDirections): void {
-    console.log(direction);
-    const currentLocation = getCurrentLocation(this.moves);
-    const availableMoves = this.getAvailableMoves();
-    if (availableMoves.includes(direction)) {
-      console.log('can move');
-      // create move
-      const nextMove = new Point(currentLocation.x, currentLocation.y);
-      switch (direction) {
-        case MoveDirections.UP:
-          nextMove.y--;
-          break;
-        case MoveDirections.RIGHT:
-          nextMove.x++;
-          break;
-        case MoveDirections.DOWN:
-          nextMove.y++;
-          break;
-        case MoveDirections.LEFT:
-          nextMove.x--;
-          break;
-      }
-      this.addMove(nextMove);
+    if (!this.isComplete) {
+      console.log(this.moves);
 
-      console.log('moves', this.moves);
+      const availableMoves = this.getAvailableMoves();
+      if (availableMoves.includes(direction)) {
+        const nextLocation = new Point(
+          this.currentLocation.x,
+          this.currentLocation.y
+        );
+        switch (direction) {
+          case MoveDirections.UP:
+            nextLocation.y--;
+            break;
+          case MoveDirections.RIGHT:
+            nextLocation.x++;
+            break;
+          case MoveDirections.DOWN:
+            nextLocation.y++;
+            break;
+          case MoveDirections.LEFT:
+            nextLocation.x--;
+            break;
+        }
+        this.currentLocation = nextLocation;
+        this.moves.push(direction);
+        if (this.maze.map[nextLocation.y][nextLocation.x] === ' ') {
+          this.maze.map[nextLocation.y][nextLocation.x] = '*';
+        }
+        if (this.currentLocation.Equals(this.maze.endingPosition)) {
+          this.onMazeComplete();
+        }
+      }
     }
   }
 
-  isComplete(): boolean {
-    return getCurrentLocation(this.moves).Equals(this.maze.endingPosition);
+  async onMazeComplete(): Promise<void> {
+    this.isComplete = true;
+    const directions = serializeMoves(this.moves);
+    console.log(directions, this.moves);
+
+    this.message = await this.mazeService.postSolution(
+      this.maze.mazePath,
+      directions
+    );
   }
 
   isCurrentLocation(x: number, y: number): boolean {
-    const currentLocation = getCurrentLocation(this.moves);
-    return x === currentLocation.x && y === currentLocation.y;
-  }
-  addMove(move: Point): void {
-    this.moves.push(move);
-    if (this.maze.map[move.y][move.x] === ' ') {
-      this.maze.map[move.y][move.x] = 'm';
-    }
+    return x === this.currentLocation.x && y === this.currentLocation.y;
   }
 
   getAdjacentCells(map: string[][], position: Point): string[] {
@@ -109,13 +111,11 @@ export class MazeComponent implements OnInit {
   getAvailableMoves(): MoveDirections[] {
     const adjacentCells = this.getAdjacentCells(
       this.maze.map,
-      getCurrentLocation(this.moves)
+      this.currentLocation
     );
-    console.log(adjacentCells);
     const options = adjacentCells.map((cell, index) =>
       canEnterCell(cell) ? index : null
     ) as MoveDirections[];
-    console.log(options);
     return options;
   }
 }
