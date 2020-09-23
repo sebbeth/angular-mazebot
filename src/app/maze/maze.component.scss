@@ -1,8 +1,16 @@
 .root {
     background-color: #1b1b1b;
     color: white;
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0;
 }
 
 .mazeGrid {
     display: grid;
+}
+
+td {
+    width: 2rem;
+    height: 2rem;
 }
