@@ -1,4 +1,3 @@
-import { serialize } from 'v8';
 import Point from './models/Point';
 
 export enum MoveDirections {
