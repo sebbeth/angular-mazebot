@@ -24,7 +24,13 @@ export class MazeComponent implements OnInit {
 
   async getData(): Promise<void> {
     this.maze = await this.mazeService.getMaze();
-    this.currentLocation = this.maze.startingPosition;
+    if (this.maze) {
+      this.currentLocation = this.maze.startingPosition;
+    }
+    // this.mazeService.getMaze().subscribe((maze: Maze) => {
+    //   this.maze = new Maze(maze);
+    //   console.log('maze', maze);
+    // });
   }
 
   @HostListener('window:keyup', ['$event'])
